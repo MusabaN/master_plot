@@ -16,8 +16,11 @@ def correct_answers(data, postpend='_proc'):
         counter = sum(answer == correct for answer, correct in zip(row, correct_answers))
         num_correct[counter] += 1
 
+    return num_correct
+
+def plot_bar(num_correct):
     sns.set(style="whitegrid")
-    sns.barplot(x=[0, 1, 2, 3, 4, 5], y=num_correct, palette="Blues_d", hue=[0, 1, 2, 3, 4, 5], legend=False)
+    sns.barplot(x=[0, 1, 2, 3, 4, 5], y=num_correct, legend=False)
     plt.show()
 
 
@@ -119,15 +122,65 @@ def bar_graph_general_gpt(data, question, title, postpend=''):
     plt.show()
 
 
+def compare_bar_graph(last_year, this_year):
+    last_year = [(x / sum(last_year)) * 100 for x in last_year]
+    this_year = [(x / sum(this_year)) * 100 for x in this_year]
+    # Convert lists into a DataFrame
+    data = {
+        'Score': [0, 1, 2, 3, 4, 5] * 2,  # Scores from 0 to 5, repeated for both years
+        'Number of Candidates': last_year + this_year,  # Concatenate the lists
+        'Year': ['Last Year'] * 6 + ['This Year'] * 6  # Label each group
+    }
+
+    df = pd.DataFrame(data)
+
+    # Create the bar graph
+    sns.set(style="whitegrid")  # Setting the seaborn style
+    plt.figure(figsize=(10, 6))  # Set the figure size
+    barplot = sns.barplot(x='Score', y='Number of Candidates', hue='Year', data=df)  # Create a barplot
+
+    plt.title('Comparison of Candidate Scores from Last Year to This Year')  # Add a title
+    plt.xlabel('Score')  # Label the x-axis
+    plt.ylabel('Number of Candidates')  # Label the y-axis
+    plt.legend(title='Year')  # Add legend
+    plt.show()  # Display the plot
+
 def main():
-    data_path = 'resultater23_v2.tsv'  # Replace with the correct path to your data file
+    data_path = 'csv/resultater24.tsv'  # Replace with the correct path to your data file
     data = pd.read_csv(data_path, delimiter='\t', index_col=0)
 
-    # correct_answers(data, which_question='virt')
-    bar_graph_general_gpt(data, 'andre_ressurser', 'Used learning resources for processes', postpend='_virt')
-    bar_graph_general_gpt(data, 'mange_videoer', 'title hehe', postpend='_virt')
-    bar_graph_general_gpt(data, 'mange_videoer', 'title hehe', postpend='_virt')
-    bar_graph_general_gpt(data, 'hyppighet', 'lil_bitch')
+    virt_24 = correct_answers(data, postpend='_virt')
+    proc_24 = correct_answers(data, postpend='_proc')
+
+    data_path = 'csv/resultater23_v2.tsv'
+    data = pd.read_csv(data_path, delimiter='\t', index_col=0)
+    virt_23 = correct_answers(data, postpend='_virt')
+    proc_23 = correct_answers(data, postpend='_proc')
+    compare_bar_graph(virt_23.copy(), virt_24.copy())
+    compare_bar_graph(proc_23.copy(), proc_24.copy())
+
+    this_year = virt_24.copy()
+    last_year = virt_23.copy()
+    scores = [0, 1, 2, 3, 4, 5]
+    last_year_average = sum(score * count for score, count in zip(scores, last_year)) / sum(last_year)
+    this_year_average = sum(score * count for score, count in zip(scores, this_year)) / sum(this_year)
+
+    print(f'2023 average virtual: {last_year_average}')
+    print(f'2024 average virtual: {this_year_average}')
+
+    this_year = proc_24.copy()
+    last_year = proc_23.copy()
+    scores = [0, 1, 2, 3, 4, 5]
+    last_year_average = sum(score * count for score, count in zip(scores, last_year)) / sum(last_year)
+    this_year_average = sum(score * count for score, count in zip(scores, this_year)) / sum(this_year)
+
+    print(f'2023 average process: {last_year_average}')
+    print(f'2024 average process: {this_year_average}')
+
+    # bar_graph_general_gpt(data, 'andre_ressurser', 'Used learning resources for processes', postpend='_virt')
+    # bar_graph_general_gpt(data, 'mange_videoer', 'title hehe', postpend='_virt')
+    # bar_graph_general_gpt(data, 'mange_videoer', 'title hehe', postpend='_virt')
+    # bar_graph_general_gpt(data, 'hyppighet', 'lil_bitch')
 
 
 if __name__ == "__main__":

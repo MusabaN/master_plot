@@ -48,28 +48,18 @@ def average_score(res_dict):
     return avg_points
 
 
-def plot_bargraph(keys, values):
-    keys = adjust_labels(keys)
-    sns.set(style="whitegrid")
-    plt.figure(figsize=(14, 8))
-    bar_graph = sns.barplot(x=keys, y=values)
-    bar_graph.set_ylabel("Average Points filtered")
-    start = min(values) - 1
-    end = max(values) + 1
-    plt.ylim(start, end)
-    plt.show()
 
 
 def main():
     # replace , with . in exam_results_2022.tsv file before using read_csv
-    data_file = open('exam_results_2022.tsv', 'r')
-    data_tmp = open('exam_results_2022_tmp.tsv', 'w')
+    data_file = open('csv/exam_results_2022.tsv', 'r')
+    data_tmp = open('csv/exam_results_2022_tmp.tsv', 'w')
     # replace all commas with dots in data_tmp
     for line in data_file:
         data_tmp.write(re.sub(r',', r'.', line))
     data_file.close()
     data_tmp.close()
-    data = pd.read_csv('exam_results_2022_tmp.tsv', sep='\t', index_col=0)
+    data = pd.read_csv('csv/exam_results_2022_tmp.tsv', sep='\t', index_col=0)
     filtered_data = average_score(calculate_scores(data, True))
     unfiltered_data = average_score(calculate_scores(data, False))
     # split keys on _ and capitalize each word and add it to a list using list comprehension
@@ -78,15 +68,44 @@ def main():
     filtered_values = list(filtered_data.values())
     unfiltered_values = list(unfiltered_data.values())
 
-    # plot_bargraph(filtered_keys, filtered_values)
-    # plot_bargraph(unfiltered_keys, unfiltered_values)
+    plot_bargraph(unfiltered_keys, unfiltered_values, "Avg scores", "Exam results unfiltered", "unfiltered_exam_results")
+    plot_bargraph(filtered_keys, filtered_values, "Avg scores", "Exam results filtered", "filtered_exam_results")
 
     filtered_data = calculate_scores(data, True)
 
     filtered_keys = [' '.join(key.split('_')).capitalize() for key in filtered_data.keys()]
     filtered_values = [list(filtered_data.values())[i][TRIES] for i in range(len(filtered_data.values()))]
-    plot_bargraph(filtered_keys, filtered_values)
+
+    # Pair each key with its corresponding value
+    paired = list(zip(filtered_keys, filtered_values))
+
+    # Sort the paired list based on the values
+    paired_sorted = sorted(paired, key=lambda x: x[1], reverse=True)
+
+    # Extract the keys and values back into separate lists
+    filtered_keys = [item[0] for item in paired_sorted]
+    filtered_values = [item[1] for item in paired_sorted]
+
+    plot_bargraph(filtered_keys, filtered_values, "Attempts", "Exam results filtered", "filtered_exam_results_attempts")
     # filtered_values = list(filtered_data.values()[TRIES])
+
+    unfiltered_data = calculate_scores(data, False)
+    print(unfiltered_data)
+    unfiltered_keys = [' '.join(key.split('_')).capitalize() for key in unfiltered_data.keys()]
+    unfiltered_values = [list(unfiltered_data.values())[i][TRIES] for i in range(len(unfiltered_data.values()))]
+
+    # Pair each key with its corresponding value
+    paired = list(zip(unfiltered_keys, unfiltered_values))
+
+    # Sort the paired list based on the values
+    paired_sorted = sorted(paired, key=lambda x: x[1], reverse=True)
+
+    # Extract the keys and values back into separate lists
+    unfiltered_keys = [item[0] for item in paired_sorted]
+    unfiltered_values = [item[1] for item in paired_sorted]
+
+    plot_bargraph(unfiltered_keys, unfiltered_values, "Attempts", "Exam results unfiltered", "unfiltered_exam_results_attempts")
+
 
 
 
