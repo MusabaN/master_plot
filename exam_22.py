@@ -4,7 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import re
 
-from utils import adjust_labels
+from utils import adjust_labels, plot_bargraph
 
 TRIES = 0
 POINTS = 1
