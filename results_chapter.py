@@ -3,8 +3,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def plot_bar_graph(csv_path):
-    # Load data from CSV
+def load_and_normalize_data(csv_path):
+    """Load data from CSV and normalize the percentages."""
     df = pd.read_csv(csv_path)
 
     # Normalize the values to percentages (if not already done before saving to CSV)
@@ -12,13 +12,13 @@ def plot_bar_graph(csv_path):
         df[year] = (df[year] / df[year].sum()) * 100
 
     # Reshape data for plotting
-    df_melted = df.melt(id_vars=['Question', 'Alternative'], var_name='Year', value_name='Percentage')
+    return df.melt(id_vars=['Question', 'Alternative'], var_name='Year', value_name='Percentage')
 
-    # Setup the style
+
+def plot_bar_graph(df_melted, category):
+    """Plot bar graphs for each question."""
     sns.set(style='whitegrid')
-
-    # Plotting each question in a separate plot
-    questions = df['Question'].unique()
+    questions = df_melted['Question'].unique()
     for question in questions:
         plt.figure(figsize=(12, 8))
         sns.barplot(x='Alternative', y='Percentage', hue='Year', data=df_melted[df_melted['Question'] == question])
@@ -26,12 +26,19 @@ def plot_bar_graph(csv_path):
         plt.ylabel('Percentage (%)')
         plt.xlabel('Alternatives')
         plt.legend(title='Year')
-        plt.show()
+        plt.savefig('./plots/' + question + '_' + category + '.png')
 
 
 def main():
-    csv_path = './csv/mcqs_processes.csv'  # Replace with your actual CSV file path
-    plot_bar_graph(csv_path)
+    category = ''
+    if category == 'proc':
+        csv_path = './csv/mcqs_processes.csv'  # Replace with your actual CSV file path
+        df_melted = load_and_normalize_data(csv_path)
+        plot_bar_graph(df_melted, "processes")
+    else:
+        csv_path = './csv/mcqs_virtual.csv'
+        df_melted = load_and_normalize_data(csv_path)
+        plot_bar_graph(df_melted, "virtual")
 
 
 if __name__ == "__main__":
