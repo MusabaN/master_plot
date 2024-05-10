@@ -152,7 +152,7 @@ def main():
     virt_24 = correct_answers(data, postpend='_virt')
     proc_24 = correct_answers(data, postpend='_proc')
 
-    data_path = 'csv/resultater23_v2.tsv'
+    data_path = 'csv/resultater23.tsv'
     data = pd.read_csv(data_path, delimiter='\t', index_col=0)
     virt_23 = correct_answers(data, postpend='_virt')
     proc_23 = correct_answers(data, postpend='_proc')

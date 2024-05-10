@@ -1,6 +1,8 @@
 import pandas as pd
 from scipy.stats import f_oneway, ttest_ind
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 from textwrap import dedent
 
 
@@ -107,26 +109,78 @@ def filter_out_not_seen_animation(data_2024, results_individual_2024, category):
         data_2024.loc[results_individual_2024.index, f'mange_i_snitt_animert_{category}'] != '0']
 
 
+def plot_comparison_graph(data_2023, data_2024, postpend='proc', save_name='comparison'):
+    first_participant = data_2024.index[3]
+    correct_answers = data_2024.loc['correct_answers', f'q1_{postpend}':f'q5_{postpend}'].to_list()
+    res_2024 = data_2024.loc[first_participant:, f'q1_{postpend}':f'q5_{postpend}'].apply(lambda x: (x == correct_answers).sum(), axis=1)
+    dist_2024 = res_2024.value_counts(normalize=True).mul(100).round(2).reindex(range(6)).sort_index()
+
+    first_participant = data_2023.index[3]
+    res_2023 = data_2023.loc[first_participant:, f'q1_{postpend}':f'q5_{postpend}'].apply(lambda x: (x == correct_answers).sum(), axis=1)
+    dist_2023 = res_2023.value_counts(normalize=True).mul(100).round(2).reindex(range(6)).sort_index()
+
+    print(save_name + " " + postpend + " 2024:\t" + str(res_2024.mean().round(2)))
+    print(save_name + " " + postpend + " 2023:\t" + str(res_2023.mean().round(2)))
+
+    return
+
+    df = pd.DataFrame({
+        'Points': dist_2023.index,  # Assuming the index is 0 to 5
+        '2023': dist_2023.values,
+        '2024': dist_2024.values
+    })
+
+    # Melt the DataFrame to long format
+    df_long = pd.melt(df, id_vars=['Points'], value_vars=['2023', '2024'], var_name='Year', value_name='Percentage')
+
+    # Load the "muted" palette
+    palette = sns.color_palette("muted")
+
+    # Access specific colors, for example, the first (index 0) and third (index 2) colors
+    color_for_2023 = palette[0]
+    color_for_2024 = palette[1]
+
+    # Example of using these colors in a plot
+    sns.set_style(style='whitegrid')
+    plt.figure(figsize=(10, 6))
+    # Assume 'df_long' is your DataFrame prepared for plotting
+    sns.barplot(x='Points', y='Percentage', hue='Year', data=df_long, palette=[color_for_2023, color_for_2024])
+
+    # Adding mean lines with the selected colors
+    # plt.axhline(y=dist_2023.mean(), color=color_for_2023, linestyle='--', label=f'Mean 2023: {dist_2023.mean():.2f}')
+    # plt.axhline(y=dist_2024.mean(), color=color_for_2024, linestyle='--', label=f'Mean 2024: {dist_2024.mean():.2f}')
+
+    # Other plot settings
+    plt.xlabel('Points Scored')
+    plt.ylabel('Percentage of Students')
+    plt.title('Comparison of Student Scores by Year')
+    plt.legend(title='Year')
+
+    # Show the plot
+    plt.savefig(f'./plots/comparison_{postpend}_{save_name}.png')
+
+
 def main():
-    # print_that_latex()
+    postpend = 'virt'
     data_2024 = load_data('csv/resultater24.tsv')
-    data_2023 = load_data('csv/resultater23_v2.tsv')
+    data_2023 = load_data('csv/resultater23.tsv')
+    # data_2024 = data_2024.loc[data_2024.loc[data_2024.index, f'mange_i_snitt_animert_{postpend}'] != 0]
+    # data_2023 = data_2023.loc[data_2023.loc[data_2023.index, f'mange_i_snitt_{postpend}'] != 0]
 
-    question_list = data_2024.loc[:, 'q1_proc':'q5_proc'].columns.to_list() + data_2024.loc[:, 'q1_virt':'q5_virt'].columns.to_list()
+    # question_list = data_2024.loc[:, 'q1_proc':'q5_proc'].columns.to_list()
+    # question_list = data_2024.loc[:, f'q1_{postpend}':f'q5_{postpend}'].columns.to_list()
+    plot_comparison_graph(data_2023, data_2024, postpend, 'unfiltered')
 
-    for question in question_list:
-        answer_distribution_actual(data_2024, question)
-        answer_distribution_actual(data_2023, question)
-
-
-
+    # for question in question_list:
+    #     answer_distribution_actual(data_2024, question)
+    #     answer_distribution_actual(data_2023, question)
 
 
 
 def print_that_latex():
     # 2024 data
     data_2024 = load_data('csv/resultater24.tsv')
-    data_2023 = load_data('csv/resultater23_v2.tsv')
+    data_2023 = load_data('csv/resultater23.tsv')
     # print("\n\nGruppe 1 vs Gruppe 2 som ikke har sett animasjonsvideoen")
     # t_test_comparison('proc', data_2024, False)
     #
@@ -166,10 +220,11 @@ def answer_distribution(data_2024, question):
 
 
 def answer_distribution_actual(data, question):
+    row_start = data.index[3]
     answer_alternatives = data.loc['answers', f'{question}'].split(',')
     num_alternatives = len(answer_alternatives)
-    dist_values = data.loc['0':, f'{question}'].value_counts(dropna=True, normalize=True).mul(100).reindex(range(num_alternatives), fill_value=0).sort_index().round(2).to_list()
-    processed_values = data.loc['0':, f'{question}'].dropna()
+    dist_values = data.loc[row_start:, f'{question}'].value_counts(dropna=True, normalize=True).mul(100).reindex(range(num_alternatives), fill_value=0).sort_index().round(2).to_list()
+    processed_values = data.loc[row_start:, f'{question}'].dropna()
     mean_value = processed_values.mean()
     std_dev_value = processed_values.std()
     skewness_value = processed_values.skew()
@@ -179,34 +234,27 @@ def answer_distribution_actual(data, question):
     std_dev_value = format_number(std_dev_value)
     skewness_value = format_number(skewness_value)
 
-    correct_answer = data.loc['correct_answers', f'{question}']
+    correct_answer = int(data.loc['correct_answers', f'{question}'])
+    dist_values = [dist_values[correct_answer]] + sorted(
+        dist_values[:correct_answer] + dist_values[correct_answer + 1:], reverse=True)
 
     # Creating the bold labels and makecell question alternatives
-    bold_labels = ' & '.join([f'\\textbf{{{i}{"*" if i == correct_answer else ""}}}' for i in range(num_alternatives)])
+    bold_labels_list = ['R', 'W1', 'W2', 'W3']
+    bold_labels = "&".join([f' \\textbf{{{label}}} &' if idx == 0 else f' \\textbf{{{label}}} ' for idx, label in enumerate(bold_labels_list)])
     makecell_questions = ' & '.join([f'\\makecell{{{alt.replace(" ", "\\\\")}}}' for alt in answer_alternatives])
 
     # Creating the tabular column alignment string dynamically based on num_alternatives
-    column_alignment = 'l' + 'c' * (num_alternatives + 2)
+    column_alignment = 'l' + 'c' * (num_alternatives + 4)
     # Dynamically creating the distribution values part of the LaTeX string
-    dist_values_str = ' & '.join(map(str, dist_values[:num_alternatives]))
+    # an extra & after the first element in dist_values_str
+    dist_values_str = ' & '.join(map(str, dist_values[1:num_alternatives]))
+
 
     question_text = data.loc['questions', f'{question}']
 
     # Forming the complete LaTeX string
     latex_string = dedent(f"""\
-    \\begin{{table}}[H]
-    \\centering
-    \\caption{{Percentage distribution, mean, standard deviation, and skewness for the independent variable of the question \"{question_text}\"}}
-    \\begin{{tabular}}{{{column_alignment}}}
-    \\hline
-     & & & {bold_labels} \\\\ \\cline{{4-{num_alternatives + 3}}}
-     & & & {makecell_questions} \\\\ \\hline
-    Percentage distribution & & & {dist_values_str} \\\\
-    Mean & \\multicolumn{{6}}{{l}}{{{mean_value}}} \\\\
-    Standard deviation & \\multicolumn{{6}}{{l}}{{{std_dev_value}}} \\\\
-    Skewness & \\multicolumn{{6}}{{l}}{{{skewness_value}}} \\\\ \\hline
-    \\end{{tabular}}
-    \\end{{table}}
+    {question_text}:& & & {dist_values[0]} && {dist_values_str} \\\\
     """)
 
     print(latex_string)
